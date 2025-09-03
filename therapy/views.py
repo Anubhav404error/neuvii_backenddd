@@ -106,13 +106,13 @@ def assign_tasks(request):
 
         parent = get_object_or_404(ParentProfile, id=parent_id)
 
-        # Get or create a child record for this parent
+        # Get or create a child record for this client (ParentProfile represents the child)
         child = parent.children.first()
         if not child:
-            # Auto-create a child record using parent's information
+            # Auto-create a child record - the client IS the child
             child = Child.objects.create(
                 name=f"{parent.first_name} {parent.last_name}",
-                age=parent.age or 5,  # Use parent's age or default to 5
+                age=parent.age or 5,  # Use client's age
                 gender='other',  # Default gender, can be updated later
                 clinic=parent.clinic,
                 parent=parent,
@@ -151,6 +151,7 @@ def assign_tasks(request):
         })
 
     except Exception as e:
+        print(f"Error in assign_tasks: {e}")  # Debug logging
         return JsonResponse({'success': False, 'error': str(e)})
 
 
