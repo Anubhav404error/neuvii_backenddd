@@ -106,10 +106,18 @@ def assign_tasks(request):
 
         parent = get_object_or_404(ParentProfile, id=parent_id)
 
-        # Get the first child for this parent (or you can modify this logic)
+        # Get or create a child record for this parent
         child = parent.children.first()
         if not child:
-            return JsonResponse({'success': False, 'error': 'No child found for this parent'})
+            # Auto-create a child record using parent's information
+            child = Child.objects.create(
+                name=f"{parent.first_name} {parent.last_name}",
+                age=parent.age or 5,  # Use parent's age or default to 5
+                gender='other',  # Default gender, can be updated later
+                clinic=parent.clinic,
+                parent=parent,
+                assigned_therapist=parent.assigned_therapist
+            )
 
         # Get therapist
         therapist = TherapistProfile.objects.filter(email=request.user.email).first()
