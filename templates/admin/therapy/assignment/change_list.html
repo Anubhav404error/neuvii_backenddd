@@ -1,0 +1,56 @@
+{% extends "admin/change_list.html" %}
+
+{% block content_title %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>{{ title }}</h1>
+        {% if show_assign_task_button %}
+            <div>
+                <button type="button" id="assign-task-btn" style="
+                    background-color: #2c8aa6; 
+                    color: white; 
+                    border: none; 
+                    padding: 10px 20px; 
+                    border-radius: 6px; 
+                    font-weight: 600; 
+                    cursor: pointer; 
+                    font-size: 14px;
+                ">
+                    📋 Assign Tasks
+                </button>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {% if show_assign_task_button %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const assignBtn = document.getElementById('assign-task-btn');
+            
+            if (assignBtn) {
+                assignBtn.addEventListener('click', function() {
+                    {% if therapist_clients.count == 1 %}
+                        // If only one client, redirect directly
+                        window.location.href = '/therapy/assign-task-wizard/?parent_id={{ therapist_clients.first.id }}';
+                    {% elif therapist_clients.count > 1 %}
+                        // If multiple clients, show selection
+                        window.location.href = '/admin/therapy/assignment/add/';
+                    {% else %}
+                        alert('No clients assigned to you. Please contact your clinic administrator.');
+                    {% endif %}
+                });
+            }
+        });
+    </script>
+    {% endif %}
+{% endblock %}
+
+{% block object-tools %}
+    {% if show_assign_task_button %}
+        {# Hide the default Add button for therapists #}
+    {% else %}
+        {{ block.super }}
+    {% endif %}
+{% endblock %}

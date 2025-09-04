@@ -1,0 +1,83 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url 'admin:index' %}">{% translate 'Home' %}</a>
+&rsaquo; <a href="{% url 'admin:app_list' app_label=opts.app_label %}">{{ opts.app_config.verbose_name }}</a>
+&rsaquo; <a href="{% url 'admin:therapy_assignment_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a>
+&rsaquo; {{ title }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="module filtered" id="changelist">
+    <div class="results">
+        <div style="padding: 20px;">
+            <h1>{{ title }}</h1>
+            <p style="margin-bottom: 20px; color: #666;">Select a client to assign tasks to:</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                {% for client in clients %}
+                <div class="client-card" style="
+                    border: 2px solid #e9ecef;
+                    border-radius: 8px;
+                    padding: 20px;
+                    cursor: pointer;
+                    transition: all 0.3s ease;
+                    background: white;
+                " onclick="selectClient({{ client.id }})">
+                    <h3 style="margin: 0 0 10px 0; color: #333;">{{ client.first_name }} {{ client.last_name }}</h3>
+                    <p style="margin: 5px 0; color: #666;"><strong>Email:</strong> {{ client.parent_email|default:"Not provided" }}</p>
+                    <p style="margin: 5px 0; color: #666;"><strong>Phone:</strong> {{ client.phone_number|default:"Not provided" }}</p>
+                    <p style="margin: 5px 0; color: #666;"><strong>Age:</strong> {{ client.age|default:"Not specified" }}</p>
+                    <p style="margin: 5px 0; color: #666;"><strong>Clinic:</strong> {{ client.clinic.name|default:"Not assigned" }}</p>
+                    <div style="margin-top: 15px; text-align: right;">
+                        <span style="
+                            background-color: #2c8aa6;
+                            color: white;
+                            padding: 5px 10px;
+                            border-radius: 4px;
+                            font-size: 12px;
+                            font-weight: 600;
+                        ">Select Client</span>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: #666;">
+                    <p>No clients assigned to you.</p>
+                    <p>Please contact your clinic administrator to assign clients.</p>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <div style="margin-top: 30px; text-align: center;">
+                <a href="{% url 'admin:therapy_assignment_changelist' %}" style="
+                    background-color: #6c757d;
+                    color: white;
+                    padding: 10px 20px;
+                    text-decoration: none;
+                    border-radius: 6px;
+                    font-weight: 600;
+                ">← Back to Tasks</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.client-card:hover {
+    border-color: #2c8aa6 !important;
+    box-shadow: 0 4px 12px rgba(44, 138, 166, 0.1);
+    transform: translateY(-2px);
+}
+</style>
+
+<script>
+function selectClient(clientId) {
+    window.location.href = '/therapy/assign-task-wizard/?parent_id=' + clientId;
+}
+</script>
+{% endblock %}

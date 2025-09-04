@@ -7,6 +7,7 @@ from django.utils.http import urlencode
 from django.shortcuts import redirect
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.template.response import TemplateResponse
 
 from neuvii_backend.admin_sites import neuvii_admin_site
 from .models import TherapistProfile, ParentProfile, Child, Assignment, SpeechArea, LongTermGoal, ShortTermGoal, Task
@@ -255,6 +256,52 @@ class AssignmentAdmin(admin.ModelAdmin):
     list_display = ["id", "task", "child", "therapist", "assigned_date", "due_date", "completed"]
     search_fields = ["task__title", "child__name", "therapist__first_name", "therapist__last_name"]
     list_filter = ["completed", "due_date"]
+
+    def changelist_view(self, request, extra_context=None):
+        """Customize changelist view for therapists to show assign task button"""
+        extra_context = extra_context or {}
+        
+        # Only show custom button for therapists
+        role = getattr(getattr(request.user, "role", None), "name", "").lower()
+        if role == "therapist":
+            extra_context['show_assign_task_button'] = True
+            # Get therapist's clients for the button
+            therapist = TherapistProfile.objects.filter(email=request.user.email).first()
+            if therapist:
+                clients = ParentProfile.objects.filter(assigned_therapist=therapist)
+                extra_context['therapist_clients'] = clients
+        
+        return super().changelist_view(request, extra_context=extra_context)
+
+    def add_view(self, request, form_url='', extra_context=None):
+        """Override add view to redirect therapists to task assignment wizard"""
+        role = getattr(getattr(request.user, "role", None), "name", "").lower()
+        
+        if role == "therapist":
+            # Get therapist's clients
+            therapist = TherapistProfile.objects.filter(email=request.user.email).first()
+            if therapist:
+                clients = ParentProfile.objects.filter(assigned_therapist=therapist)
+                
+                if clients.count() == 1:
+                    # If only one client, redirect directly to wizard
+                    client = clients.first()
+                    return redirect(f'/therapy/assign-task-wizard/?parent_id={client.id}')
+                elif clients.count() > 1:
+                    # If multiple clients, show selection page
+                    context = {
+                        'title': 'Select Client for Task Assignment',
+                        'clients': clients,
+                        'opts': self.model._meta,
+                        'has_view_permission': self.has_view_permission(request),
+                    }
+                    return TemplateResponse(request, 'admin/therapy/assignment/select_client.html', context)
+                else:
+                    messages.error(request, 'No clients assigned to you. Please contact your clinic administrator.')
+                    return redirect('/admin/therapy/assignment/')
+        
+        # For non-therapists, use default add view
+        return super().add_view(request, form_url, extra_context)
 
     # Scope visible rows by role
     def get_queryset(self, request):
