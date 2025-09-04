@@ -165,19 +165,21 @@ class ParentProfileAdmin(admin.ModelAdmin):
     form = ParentProfileForm
     list_display = [
         "id", "first_name", "last_name", "parent_email", "phone_number",
-        "age", "fscd_approval", "assigned_therapist", "clinic", "date_added", "is_active",
-        "add_tasks_button"
+        "age", "fscd_approval", "assigned_therapist", "clinic", "date_added", "is_active"
     ]
     search_fields = ["first_name", "last_name", "parent_email", "phone_number"]
     list_filter = ["clinic", "fscd_approval", "is_active"]
     readonly_fields = ["date_added"]
 
-    # “Add Tasks” button on the changelist (rightmost column)
-    def add_tasks_button(self, obj):
-        url = reverse("assign_task_wizard") + "?" + urlencode({"parent_id": obj.pk})
-        return format_html('<a class="button" href="{}" style="float:right; background-color: #2c8aa6; color: white; padding: 8px 16px; border-radius: 4px; text-decoration: none;">Assign Task</a>', url)
-    add_tasks_button.short_description = "Add Tasks"
-    add_tasks_button.allow_tags = True
+    def changelist_view(self, request, extra_context=None):
+        """Add custom button to changelist view for therapists only"""
+        extra_context = extra_context or {}
+        
+        # Only show assign task button for therapists
+        role = getattr(getattr(request.user, "role", None), "name", "").lower()
+        extra_context['show_assign_task_button'] = (role == "therapist" or request.user.is_superuser)
+        
+        return super().changelist_view(request, extra_context=extra_context)
 
     # Provide request to form
     def get_form(self, request, obj=None, **kwargs):

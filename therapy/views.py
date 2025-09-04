@@ -109,7 +109,7 @@ def assign_tasks(request):
         # Get or create a child record for this client (ParentProfile represents the child)
         child = parent.children.first()
         if not child:
-            # Auto-create a child record - the client IS the child
+            # Auto-create a child record - the client (ParentProfile) IS the child
             child = Child.objects.create(
                 name=f"{parent.first_name} {parent.last_name}",
                 age=parent.age or 5,  # Use client's age
@@ -118,6 +118,7 @@ def assign_tasks(request):
                 parent=parent,
                 assigned_therapist=parent.assigned_therapist
             )
+            print(f"Auto-created child record for client: {child.name}")
 
         # Get therapist
         therapist = TherapistProfile.objects.filter(email=request.user.email).first()
@@ -142,6 +143,7 @@ def assign_tasks(request):
                     therapist=therapist
                 )
                 assignments_created += 1
+                print(f"Created assignment: {task.title} for {child.name}")
 
         return JsonResponse({
             'success': True,

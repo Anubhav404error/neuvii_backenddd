@@ -1,0 +1,73 @@
+{% extends "admin/change_list.html" %}
+
+{% block content_title %}
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+        <h1>{{ title }}</h1>
+        {% if show_assign_task_button %}
+            <div>
+                <button type="button" id="assign-task-btn" style="
+                    background-color: #2c8aa6; 
+                    color: white; 
+                    border: none; 
+                    padding: 10px 20px; 
+                    border-radius: 6px; 
+                    font-weight: 600; 
+                    cursor: pointer; 
+                    font-size: 14px;
+                    display: none;
+                ">
+                    📋 Assign Tasks
+                </button>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}
+
+{% block extrahead %}
+    {{ block.super }}
+    {% if show_assign_task_button %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const assignBtn = document.getElementById('assign-task-btn');
+            const table = document.querySelector('#result_list');
+            
+            if (assignBtn && table) {
+                // Show button when there are clients
+                const rows = table.querySelectorAll('tbody tr');
+                if (rows.length > 0) {
+                    assignBtn.style.display = 'inline-block';
+                }
+                
+                // Handle button click
+                assignBtn.addEventListener('click', function() {
+                    const selectedRows = table.querySelectorAll('tbody tr input[type="checkbox"]:checked');
+                    
+                    if (selectedRows.length === 0) {
+                        alert('Please select a client first by checking the checkbox next to their name.');
+                        return;
+                    }
+                    
+                    if (selectedRows.length > 1) {
+                        alert('Please select only one client at a time for task assignment.');
+                        return;
+                    }
+                    
+                    // Get the parent ID from the selected row
+                    const selectedRow = selectedRows[0].closest('tr');
+                    const editLink = selectedRow.querySelector('a[href*="/change/"]');
+                    
+                    if (editLink) {
+                        const href = editLink.getAttribute('href');
+                        const parentId = href.match(/\/(\d+)\/change\//)[1];
+                        
+                        // Redirect to assign task wizard
+                        window.location.href = `/therapy/assign-task-wizard/?parent_id=${parentId}`;
+                    } else {
+                        alert('Unable to determine client ID. Please try again.');
+                    }
+                });
+            }
+        });
+    </script>
+    {% endif %}
+{% endblock %}
