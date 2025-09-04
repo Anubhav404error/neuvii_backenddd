@@ -15,7 +15,7 @@
                     cursor: pointer; 
                     font-size: 14px;
                 ">
-                    📋 Assign Tasks
+                    📋 Assign Task
                 </button>
             </div>
         {% endif %}
@@ -35,8 +35,8 @@
                         // If only one client, redirect directly
                         window.location.href = '/therapy/assign-task-wizard/?parent_id={{ therapist_clients.first.id }}';
                     {% elif therapist_clients.count > 1 %}
-                        // If multiple clients, show selection
-                        window.location.href = '/admin/therapy/assignment/add/';
+                        // If multiple clients, show selection page
+                        window.location.href = '/therapy/select-client-for-assignment/';
                     {% else %}
                         alert('No clients assigned to you. Please contact your clinic administrator.');
                     {% endif %}

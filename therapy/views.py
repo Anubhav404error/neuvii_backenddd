@@ -45,6 +45,36 @@ def assign_task_wizard(request):
 
 
 @login_required
+def select_client_for_assignment(request):
+    """Show client selection page for therapists with multiple clients"""
+    role = getattr(getattr(request.user, "role", None), "name", "").lower()
+    if role != "therapist":
+        messages.error(request, 'Only therapists can access this page')
+        return redirect('/admin/')
+    
+    therapist = TherapistProfile.objects.filter(email=request.user.email).first()
+    if not therapist:
+        messages.error(request, 'Therapist profile not found')
+        return redirect('/admin/')
+    
+    clients = ParentProfile.objects.filter(assigned_therapist=therapist)
+    
+    if clients.count() == 0:
+        messages.error(request, 'No clients assigned to you. Please contact your clinic administrator.')
+        return redirect('/admin/therapy/assignment/')
+    elif clients.count() == 1:
+        # If only one client, redirect directly to wizard
+        return redirect(f'/therapy/assign-task-wizard/?parent_id={clients.first().id}')
+    
+    context = {
+        'title': 'Select Client for Task Assignment',
+        'clients': clients,
+        'therapist': therapist,
+    }
+    
+    return render(request, 'therapy/select_client_for_assignment.html', context)
+
+@login_required
 @require_http_methods(["GET"])
 def get_long_term_goals(request):
     """AJAX endpoint to get long-term goals for a speech area"""

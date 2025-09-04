@@ -273,35 +273,12 @@ class AssignmentAdmin(admin.ModelAdmin):
         
         return super().changelist_view(request, extra_context=extra_context)
 
-    def add_view(self, request, form_url='', extra_context=None):
-        """Override add view to redirect therapists to task assignment wizard"""
+    def has_add_permission(self, request):
+        """Hide the default Add Assignment button for therapists"""
         role = getattr(getattr(request.user, "role", None), "name", "").lower()
-        
         if role == "therapist":
-            # Get therapist's clients
-            therapist = TherapistProfile.objects.filter(email=request.user.email).first()
-            if therapist:
-                clients = ParentProfile.objects.filter(assigned_therapist=therapist)
-                
-                if clients.count() == 1:
-                    # If only one client, redirect directly to wizard
-                    client = clients.first()
-                    return redirect(f'/therapy/assign-task-wizard/?parent_id={client.id}')
-                elif clients.count() > 1:
-                    # If multiple clients, show selection page
-                    context = {
-                        'title': 'Select Client for Task Assignment',
-                        'clients': clients,
-                        'opts': self.model._meta,
-                        'has_view_permission': self.has_view_permission(request),
-                    }
-                    return TemplateResponse(request, 'admin/therapy/assignment/select_client.html', context)
-                else:
-                    messages.error(request, 'No clients assigned to you. Please contact your clinic administrator.')
-                    return redirect('/admin/therapy/assignment/')
-        
-        # For non-therapists, use default add view
-        return super().add_view(request, form_url, extra_context)
+            return False  # Hide default add button for therapists
+        return request.user.is_superuser
 
     # Scope visible rows by role
     def get_queryset(self, request):
@@ -319,46 +296,6 @@ class AssignmentAdmin(admin.ModelAdmin):
             return qs.none()
         return qs.none()
 
-    # Limit FK choices based on role and GET params (parent_id or child_id)
-    def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        role = _role_name(request.user)
-
-        # Pre-filter children for therapist
-        if db_field.name == "child":
-            parent_id = request.GET.get("parent_id")
-            child_id = request.GET.get("child_id")
-            qs = Child.objects.all()
-
-            if role == "therapist":
-                qs = qs.filter(assigned_therapist__email=request.user.email)
-                if parent_id:
-                    qs = qs.filter(parent_id=parent_id)
-                if child_id:
-                    qs = qs.filter(pk=child_id)
-                kwargs["queryset"] = qs
-
-            elif role == "parent":
-                # Parent should never add; but for safety, limit to their children
-                qs = qs.filter(parent__parent_email=request.user.email)
-                kwargs["queryset"] = qs
-
-        # Therapist field: auto restrict to self for therapist
-        if db_field.name == "therapist":
-            if role == "therapist":
-                kwargs["queryset"] = TherapistProfile.objects.filter(email=request.user.email)
-
-        return super().formfield_for_foreignkey(db_field, request, **kwargs)
-
-    # Default initial values (therapist = current therapist)
-    def get_changeform_initial_data(self, request):
-        initial = super().get_changeform_initial_data(request)
-        role = _role_name(request.user)
-        if role == "therapist":
-            tp = TherapistProfile.objects.filter(email=request.user.email).first()
-            if tp:
-                initial["therapist"] = tp.pk
-        return initial
-
     # Permissions:
     # - Therapist: full (add/change/delete/view) BUT only for their own assignments
     # - Parent: view only
@@ -370,10 +307,6 @@ class AssignmentAdmin(admin.ModelAdmin):
         if role in ("therapist", "parent"):
             return True
         return False
-
-    def has_add_permission(self, request):
-        role = _role_name(request.user)
-        return request.user.is_superuser or role == "therapist"
 
     def has_change_permission(self, request, obj=None):
         role = _role_name(request.user)

@@ -3,6 +3,7 @@ from . import views
 
 urlpatterns = [
     path('assign-task-wizard/', views.assign_task_wizard, name='assign_task_wizard'),
+    path('select-client-for-assignment/', views.select_client_for_assignment, name='select_client_for_assignment'),
     path('api/long-term-goals/', views.get_long_term_goals, name='get_long_term_goals'),
     path('api/short-term-goals/', views.get_short_term_goals, name='get_short_term_goals'),
     path('api/tasks/', views.get_tasks, name='get_tasks'),
