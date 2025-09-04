@@ -38,32 +38,55 @@
                     assignBtn.style.display = 'inline-block';
                 }
                 
-                // Handle button click
+                // Handle button click - automatically use the first/only client
                 assignBtn.addEventListener('click', function() {
-                    const selectedRows = table.querySelectorAll('tbody tr input[type="checkbox"]:checked');
+                    const rows = table.querySelectorAll('tbody tr');
                     
-                    if (selectedRows.length === 0) {
-                        alert('Please select a client first by checking the checkbox next to their name.');
+                    if (rows.length === 0) {
+                        alert('No clients available for task assignment.');
                         return;
                     }
                     
-                    if (selectedRows.length > 1) {
-                        alert('Please select only one client at a time for task assignment.');
-                        return;
+                    // If there's only one client, use it automatically
+                    if (rows.length === 1) {
+                        const editLink = rows[0].querySelector('a[href*="/change/"]');
+                        if (editLink) {
+                            const href = editLink.getAttribute('href');
+                            const parentId = href.match(/\/(\d+)\/change\//)[1];
+                            window.location.href = `/therapy/assign-task-wizard/?parent_id=${parentId}`;
+                            return;
+                        }
                     }
                     
-                    // Get the parent ID from the selected row
-                    const selectedRow = selectedRows[0].closest('tr');
-                    const editLink = selectedRow.querySelector('a[href*="/change/"]');
+                    // If multiple clients, show selection dialog
+                    let clientOptions = '';
+                    rows.forEach((row, index) => {
+                        const nameCell = row.querySelector('td:nth-child(2)'); // Assuming name is in 2nd column
+                        const editLink = row.querySelector('a[href*="/change/"]');
+                        if (nameCell && editLink) {
+                            const href = editLink.getAttribute('href');
+                            const parentId = href.match(/\/(\d+)\/change\//)[1];
+                            const clientName = nameCell.textContent.trim();
+                            clientOptions += `<option value="${parentId}">${clientName}</option>`;
+                        }
+                    });
                     
-                    if (editLink) {
-                        const href = editLink.getAttribute('href');
-                        const parentId = href.match(/\/(\d+)\/change\//)[1];
+                    if (clientOptions) {
+                        const selectedClient = prompt(`Multiple clients found. Please enter the number (1-${rows.length}) for the client you want to assign tasks to:\n\n${Array.from(rows).map((row, i) => `${i+1}. ${row.querySelector('td:nth-child(2)').textContent.trim()}`).join('\n')}`);
                         
-                        // Redirect to assign task wizard
-                        window.location.href = `/therapy/assign-task-wizard/?parent_id=${parentId}`;
-                    } else {
-                        alert('Unable to determine client ID. Please try again.');
+                        if (selectedClient && !isNaN(selectedClient)) {
+                            const clientIndex = parseInt(selectedClient) - 1;
+                            if (clientIndex >= 0 && clientIndex < rows.length) {
+                                const editLink = rows[clientIndex].querySelector('a[href*="/change/"]');
+                                if (editLink) {
+                                    const href = editLink.getAttribute('href');
+                                    const parentId = href.match(/\/(\d+)\/change\//)[1];
+                                    window.location.href = `/therapy/assign-task-wizard/?parent_id=${parentId}`;
+                                }
+                            } else {
+                                alert('Invalid selection. Please try again.');
+                            }
+                        }
                     }
                 });
             }

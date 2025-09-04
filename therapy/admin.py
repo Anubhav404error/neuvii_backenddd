@@ -175,9 +175,9 @@ class ParentProfileAdmin(admin.ModelAdmin):
         """Add custom button to changelist view for therapists only"""
         extra_context = extra_context or {}
         
-        # Only show assign task button for therapists
+        # Only show assign task button for therapists (not clinic admin)
         role = getattr(getattr(request.user, "role", None), "name", "").lower()
-        extra_context['show_assign_task_button'] = (role == "therapist" or request.user.is_superuser)
+        extra_context['show_assign_task_button'] = (role == "therapist")
         
         return super().changelist_view(request, extra_context=extra_context)
 
